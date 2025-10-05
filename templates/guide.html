@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline Guide — Stargazer AI</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .guide-container { max-width: 1000px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; }
+        .muted { color: #6B7280; }
+        .back-link { display:inline-block; margin-bottom: 15px; }
+        pre.example { background:#f8fafc; padding:12px; border-radius:6px; overflow:auto }
+    </style>
+</head>
+<body>
+    <div class="title_card">
+        <h1>Stargazer AI — Dataset & Training Guide</h1>
+        <p class="muted">Quick reference for preparing data and training the model</p>
+    </div>
+
+    <div class="container">
+        <div class="guide-container">
+            <a class="file-label back-link" href="/">← Back to Home</a>
+
+            <h2>Overview — ML pipeline (brief)</h2>
+            <ol>
+                <li>Upload a labelled dataset (CSV) that contains the target column and features.</li>
+                <li>Preprocess: handle missing values, convert types, encode categorical columns, scale numeric features.</li>
+                <li>Feature engineering: create derived features the model benefits from (example: ratios, log transforms).</li>
+                <li>Balance classes if needed (SMOTE is used here) and run cross-validation.</li>
+                <li>Train candidate models, evaluate with cross-validation, select the best model and inspect metrics and confusion matrix.</li>
+                <li>Upload unlabelled test data and run predictions using the same preprocessing pipeline.</li>
+            </ol>
+
+            <h2>Required / recommended features</h2>
+            <p class="muted">The pipeline expects features similar to the list below. Not every dataset will use the exact same names — mapping/renaming columns is common.</p>
+            <ul>
+                <li>koi_disposition (target: e.g. CANDIDATE, FALSE POSITIVE, CONFIRMED)</li>
+                <li>koi_period</li>
+                <li>koi_time0bk</li>
+                <li>koi_impact</li>
+                <li>koi_duration</li>
+                <li>koi_depth</li>
+                <li>koi_ror</li>
+                <li>koi_srho</li>
+                <li>koi_prad</li>
+                <li>koi_sma</li>
+                <li>koi_incl</li>
+                <li>koi_num_transits</li>
+                <li>koi_steff</li>
+                <li>koi_slogg</li>
+                <li>koi_smet</li>
+                <li>koi_srad</li>
+                <li>koi_smass</li>
+                <li>koi_kepmag, koi_gmag, koi_rmag, koi_imag, koi_zmag</li>
+                <li>koi_jmag, koi_hmag, koi_kmag</li>
+            </ul>
+
+            <h3>Column-name differences</h3>
+            <p class="muted">If your dataset uses different column names, rename them to the ones above before uploading. Common examples:</p>
+            <ul>
+                <li><code>period</code> → <code>koi_period</code></li>
+                <li><code>depth</code> → <code>koi_depth</code></li>
+                <li><code>duration</code> → <code>koi_duration</code></li>
+                <li><code>prad</code> → <code>koi_prad</code></li>
+            </ul>
+
+            <h2>Cleaning & preprocessing checklist</h2>
+            <ul>
+                <li>Remove duplicate rows and obvious corrupt records.</li>
+                <li>Ensure the target column (<code>koi_disposition</code>) exists and has consistent labels.</li>
+                <li>Numeric columns: impute missing values (median recommended), clip extreme outliers (IQR rule) or winsorize.</li>
+                <li>Categorical columns: fill missing with the mode or the token <code>'UNKNOWN'</code>, then encode (LabelEncoder or one-hot).</li>
+                <li>Scale numeric features (StandardScaler) before training models that expect scaled inputs.</li>
+                <li>Create simple derived features used by the app: <code>planets_to_star_radius_ratio = koi_prad / koi_srad</code>, <code>log_period = log1p(koi_period)</code>, <code>depth_to_duration = koi_depth / koi_duration</code>.</li>
+                <li>Split a hold-out test set or use cross-validation (the app uses stratified CV + SMOTE for class imbalance).</li>
+            </ul>
+
+            <h2>Quick data-mapping example</h2>
+            <p class="muted">If your CSV has different names, you can prepare a small mapping script before upload (example using pandas):</p>
+            <pre class="example">import pandas as pd
+df = pd.read_csv('my_data.csv')
+rename_map = {'period':'koi_period', 'depth':'koi_depth', 'duration':'koi_duration', 'prad':'koi_prad'}
+df.rename(columns=rename_map, inplace=True)
+df.to_csv('my_data_renamed.csv', index=False)
+            </pre>
+
+            <h2>Training tips</h2>
+            <ul>
+                <li>Keep a small validation split or use stratified folds to preserve class distribution.</li>
+                <li>Try these metrics: accuracy, precision, recall, F1 (macro) and review the confusion matrix.</li>
+                <li>Use class balancing (SMOTE) if classes are imbalanced; monitor for overfitting.</li>
+                <li>For the XGBoost model used in this app: tune <code>n_estimators</code>, <code>max_depth</code>, and <code>learning_rate</code>.</li>
+            </ul>
+
+            <h2>Recommended CSV formatting</h2>
+            <ul>
+                <li>Comma-separated, UTF-8, with a header row.</li>
+                <li>Use consistent missing value markers (empty cells are fine).</li>
+                <li>Include the target column for labelled uploads.</li>
+            </ul>
+
+            <p class="muted">If you want, I can add a small helper page to help rename and preview a mapping interactively before upload — would you like that?</p>
+        </div>
+    </div>
+</body>
+</html>
